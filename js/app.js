@@ -4,7 +4,7 @@
 
 import {
     loadDashboardData,
-    hasCachedDashboardData
+    getRequiredSheets
 } from "./data.js";
 
 import {
@@ -69,56 +69,19 @@ async function initDashboard() {
     renderLayout();
     setPageInfo();
 
-    const hasCache =
-        hasCachedDashboardData();
+    const currentPage =
+        getCurrentPage();
 
-
-    // --------------------------------------------------------
-    // Cached data available
-    // --------------------------------------------------------
-
-    if (hasCache) {
-
-        try {
-
-            await loadDashboardData();
-
-            renderCurrentPage();
-
-        } catch (error) {
-
-            console.error(
-                "Cached dashboard load failed:",
-                error
-            );
-
-            showDashboardError();
-
-            return;
-        }
-
-
-        // ----------------------------------------------------
-        // Fetch latest data in background
-        // ----------------------------------------------------
-
-        refreshDashboardInBackground();
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // First visit
-    // --------------------------------------------------------
-
-    showDashboardLoading();
+    const requiredSheets =
+        getRequiredSheets(
+            currentPage
+        );
 
     try {
 
-        await loadDashboardData({
-            forceRefresh: true
-        });
+        await loadDashboardData(
+            requiredSheets
+        );
 
         renderCurrentPage();
 
@@ -195,37 +158,7 @@ function renderCurrentPage() {
 
 
 // ============================================================
-// Background Refresh
-// ============================================================
-
-async function refreshDashboardInBackground() {
-
-    try {
-
-        await loadDashboardData({
-            forceRefresh: true
-        });
-
-        renderCurrentPage();
-
-        console.log(
-            "Dashboard data updated in background."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Background dashboard refresh failed:",
-            error
-        );
-
-        // Existing page remains visible.
-    }
-}
-
-
-// ============================================================
-// Manual Refresh
+// Refresh Dashboard
 // ============================================================
 
 async function refreshDashboard() {
@@ -240,9 +173,17 @@ async function refreshDashboard() {
 
     try {
 
-        await loadDashboardData({
-            forceRefresh: true
-        });
+        const currentPage =
+            getCurrentPage();
+
+        const requiredSheets =
+            getRequiredSheets(
+                currentPage
+            );
+
+        await loadDashboardData(
+            requiredSheets
+        );
 
         renderCurrentPage();
 
@@ -290,90 +231,6 @@ document.addEventListener(
         refreshDashboard();
     }
 );
-
-
-// ============================================================
-// Loading State
-// ============================================================
-
-function showDashboardLoading() {
-
-    const pageContent =
-        document.getElementById(
-            "pageContent"
-        );
-
-    if (!pageContent) {
-        return;
-    }
-
-    pageContent.innerHTML = `
-        <div
-            class="
-                min-h-[60vh]
-                space-y-6
-                animate-pulse
-            "
-        >
-
-            <!-- Hero Skeleton -->
-
-            <div
-                class="
-                    h-40
-                    rounded-3xl
-                    bg-slate-200
-                "
-            ></div>
-
-
-            <!-- KPI Skeleton -->
-
-            <div
-                class="
-                    grid
-                    grid-cols-1
-                    gap-4
-                    sm:grid-cols-2
-                    xl:grid-cols-4
-                "
-            >
-
-                ${Array.from(
-        { length: 4 },
-        () => `
-                        <div
-                            class="
-                                h-32
-                                rounded-2xl
-                                border
-                                border-slate-200
-                                bg-white
-                                shadow-sm
-                            "
-                        ></div>
-                    `
-    ).join("")}
-
-            </div>
-
-
-            <!-- Content Skeleton -->
-
-            <div
-                class="
-                    h-72
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-white
-                    shadow-sm
-                "
-            ></div>
-
-        </div>
-    `;
-}
 
 
 // ============================================================

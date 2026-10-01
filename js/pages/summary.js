@@ -2788,6 +2788,7 @@ function renderSourceMix() {
 
                 ${rows.map(
         ([source, data]) => {
+            console.log(source, data.applications, data.leads);
 
             const conversion =
                 data.leads
@@ -2818,32 +2819,12 @@ function renderSourceMix() {
                                     ${escapeHtml(source)}
                                 </td>
 
-                                <td
-                                    class="
-                                        px-3 py-3
-                                        text-right
-                                        text-sm
-                                        font-semibold
-                                        text-slate-900
-                                    "
-                                >
-                                    ${formatNumber(
-                data.leads
-            )}
+                                <td class=" p-3 text-right text-sm font-semibold text-slate-900">
+                                    ${formatNumber(data.leads)}
                                 </td>
 
-                                <td
-                                    class="
-                                        px-3 py-3
-                                        text-right
-                                        text-sm
-                                        font-semibold
-                                        text-slate-900
-                                    "
-                                >
-                                    ${formatNumber(
-                data.applications
-            )}
+                                <td class="p-3 text-right text-sm font-semibold text-slate-900">
+                                    ${formatNumber(data.applications)}
                                 </td>
 
                                 <td

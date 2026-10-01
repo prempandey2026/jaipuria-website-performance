@@ -844,44 +844,166 @@ function normalizeLeadRecord(row) {
 // ============================================================
 
 function parseSheetDate(value) {
+
     if (!value) {
         return null;
     }
 
-    if (
-        value instanceof Date &&
-        !Number.isNaN(
-            value.getTime()
-        )
-    ) {
-        return value;
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime())
+            ? null
+            : value;
     }
 
-    const stringValue =
-        String(value).trim();
+    let text = String(value).trim();
 
-    const gvizMatch =
-        stringValue.match(
+    if (!text) {
+        return null;
+    }
+
+    // Remove wrapping quotes if GViz returns them
+    text = text.replace(/^['"]|['"]$/g, "").trim();
+
+
+    // ========================================================
+    // Google Visualization Date format
+    // Date(2026,8,14,21,53,0)
+    // ========================================================
+
+    const googleDate =
+        text.match(
             /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/
         );
 
-    if (gvizMatch) {
+    if (googleDate) {
+
+        const year =
+            Number(googleDate[1]);
+
+        const month =
+            Number(googleDate[2]);
+
+        const day =
+            Number(googleDate[3]);
+
+        const hour =
+            Number(googleDate[4] || 0);
+
+        const minute =
+            Number(googleDate[5] || 0);
+
+        const second =
+            Number(googleDate[6] || 0);
+
         return new Date(
-            Number(gvizMatch[1]),
-            Number(gvizMatch[2]),
-            Number(gvizMatch[3]),
-            Number(gvizMatch[4] || 0),
-            Number(gvizMatch[5] || 0),
-            Number(gvizMatch[6] || 0)
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second
         );
     }
 
-    const parsed =
-        new Date(stringValue);
 
-    return Number.isNaN(
-        parsed.getTime()
-    )
+    // ========================================================
+    // DD/MM/YY or DD/MM/YYYY
+    // Example: 1/8/26 22:55
+    // ========================================================
+
+    const slashDate =
+        text.match(
+            /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+        );
+
+    if (slashDate) {
+
+        const day =
+            Number(slashDate[1]);
+
+        const month =
+            Number(slashDate[2]);
+
+        let year =
+            Number(slashDate[3]);
+
+        const hour =
+            Number(slashDate[4] || 0);
+
+        const minute =
+            Number(slashDate[5] || 0);
+
+        const second =
+            Number(slashDate[6] || 0);
+
+        if (year < 100) {
+            year += 2000;
+        }
+
+        return new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            second
+        );
+    }
+
+
+    // ========================================================
+    // DD-MM-YY or DD-MM-YYYY
+    // Example: 14-09-2026 21:53
+    // ========================================================
+
+    const dashDate =
+        text.match(
+            /^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+        );
+
+    if (dashDate) {
+
+        const day =
+            Number(dashDate[1]);
+
+        const month =
+            Number(dashDate[2]);
+
+        let year =
+            Number(dashDate[3]);
+
+        const hour =
+            Number(dashDate[4] || 0);
+
+        const minute =
+            Number(dashDate[5] || 0);
+
+        const second =
+            Number(dashDate[6] || 0);
+
+        if (year < 100) {
+            year += 2000;
+        }
+
+        return new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            second
+        );
+    }
+
+
+    // ========================================================
+    // Final fallback
+    // ========================================================
+
+    const parsed =
+        new Date(text);
+
+    return Number.isNaN(parsed.getTime())
         ? null
         : parsed;
 }
@@ -1815,12 +1937,7 @@ function renderStateTable(years) {
 
     const rows =
         Object.entries(stateMap)
-            .sort(
-                (a, b) =>
-                    b[1].leads -
-                    a[1].leads
-            )
-            .map(
+            .sort((a, b) => b[1].leads - a[1].leads).map(
                 ([state, value]) => `
                     <tr>
                         <td class="font-medium text-slate-900">
